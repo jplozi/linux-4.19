@@ -2332,7 +2332,7 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
 	else if (rt_prio(p->prio))
 		p->sched_class = &rt_sched_class;
 	else
-		p->sched_class = &fair_sched_class;
+		p->sched_class = &ktz_sched_class;
 
 	init_entity_runnable_average(&p->se);
 
@@ -3837,7 +3837,7 @@ void rt_mutex_setprio(struct task_struct *p, struct task_struct *pi_task)
 			p->dl.dl_boosted = 0;
 		if (rt_prio(oldprio))
 			p->rt.timeout = 0;
-		p->sched_class = &fair_sched_class;
+		p->sched_class = &ktz_sched_class;
 	}
 
 	p->prio = prio;
@@ -3913,6 +3913,8 @@ void set_user_nice(struct task_struct *p, long nice)
 	}
 	if (running)
 		set_curr_task(rq, p);
+
+	check_class_changed(rq, p, &ktz_sched_class, old_prio);
 out_unlock:
 	task_rq_unlock(rq, p, &rf);
 }
@@ -4093,7 +4095,7 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
 	else if (rt_prio(p->prio))
 		p->sched_class = &rt_sched_class;
 	else
-		p->sched_class = &fair_sched_class;
+		p->sched_class = &ktz_sched_class;
 }
 
 /*
@@ -5981,6 +5983,7 @@ void __init sched_init(void)
 		init_cfs_rq(&rq->cfs);
 		init_rt_rq(&rq->rt);
 		init_dl_rq(&rq->dl);
+		init_ktz_tdq(&rq->ktz);
 #ifdef CONFIG_FAIR_GROUP_SCHED
 		root_task_group.shares = ROOT_TASK_GROUP_LOAD;
 		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
