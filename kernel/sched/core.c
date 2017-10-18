@@ -2327,12 +2327,16 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
 		p->sched_reset_on_fork = 0;
 	}
 
-	if (dl_prio(p->prio))
+	if (dl_prio(p->prio)) {
 		return -EAGAIN;
-	else if (rt_prio(p->prio))
+	} else if (rt_prio(p->prio)) {
 		p->sched_class = &rt_sched_class;
-	else
-		p->sched_class = &ktz_sched_class;
+	} else {
+		if (ktz_prio(p->prio)) 
+			p->sched_class = &ktz_sched_class;
+		else
+			p->sched_class = &fair_sched_class;
+	}
 
 	init_entity_runnable_average(&p->se);
 
@@ -3837,7 +3841,10 @@ void rt_mutex_setprio(struct task_struct *p, struct task_struct *pi_task)
 			p->dl.dl_boosted = 0;
 		if (rt_prio(oldprio))
 			p->rt.timeout = 0;
-		p->sched_class = &ktz_sched_class;
+		if (ktz_prio(prio))
+			p->sched_class = &ktz_sched_class;
+		else
+			p->sched_class = &fair_sched_class;
 	}
 
 	p->prio = prio;
@@ -3902,6 +3909,12 @@ void set_user_nice(struct task_struct *p, long nice)
 	p->prio = effective_prio(p);
 	delta = p->prio - old_prio;
 
+	const struct sched_class *prev_class = p->sched_class;
+	if (ktz_prio(p->prio))
+		p->sched_class = &ktz_sched_class;
+	else
+		p->sched_class = &fair_sched_class;
+
 	if (queued) {
 		enqueue_task(rq, p, ENQUEUE_RESTORE | ENQUEUE_NOCLOCK);
 		/*
@@ -3914,7 +3927,7 @@ void set_user_nice(struct task_struct *p, long nice)
 	if (running)
 		set_curr_task(rq, p);
 
-	check_class_changed(rq, p, &ktz_sched_class, old_prio);
+	check_class_changed(rq, p, prev_class, old_prio);
 out_unlock:
 	task_rq_unlock(rq, p, &rf);
 }
@@ -4094,8 +4107,12 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
 		p->sched_class = &dl_sched_class;
 	else if (rt_prio(p->prio))
 		p->sched_class = &rt_sched_class;
-	else
-		p->sched_class = &ktz_sched_class;
+	else {
+		if (ktz_prio(p->prio))
+			p->sched_class = &ktz_sched_class;
+		else
+			p->sched_class = &fair_sched_class;
+	}
 }
 
 /*
