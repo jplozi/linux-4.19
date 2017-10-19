@@ -30,6 +30,7 @@
 #include <linux/mm_types_task.h>
 #include <linux/task_io_accounting.h>
 #include <linux/rseq.h>
+#include <linux/sched/sysctl.h>
 
 /* task_struct member predeclarations (sorted alphabetically): */
 struct audit_context;
@@ -1254,7 +1255,7 @@ static inline int ktz_prio(int prio)
 {
 	if (prio >= MIN_KTZ_PRIO && prio <= MAX_KTZ_PRIO)
 		return 1;
-	return 0;
+	return sysctl_ktz_enabled && MIN_KTZ_PRIO <= prio && prio <= MAX_KTZ_PRIO;
 }
 
 static inline int ktz_task(struct task_struct *p)
