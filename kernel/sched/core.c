@@ -3324,9 +3324,11 @@ pick_next_task(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
 		if (unlikely(p == RETRY_TASK))
 			goto again;
 
-		/* Assumes fair_sched_class->next == idle_sched_class */
-		if (unlikely(!p))
+		/* assumes fair_sched_class->next == idle_sched_class */
+		if (unlikely(!p)) {
+			BUG();
 			p = idle_sched_class.pick_next_task(rq, prev, rf);
+		}
 
 		return p;
 	}
