@@ -9,6 +9,8 @@
 
 #include <trace/events/power.h>
 
+extern void check_balance(struct rq *rq, bool idle);
+
 /* Linker adds these: start and end of __cpuidle functions */
 extern char __cpuidle_text_start[], __cpuidle_text_end[];
 
@@ -425,6 +427,9 @@ static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
  */
 static void task_tick_idle(struct rq *rq, struct task_struct *curr, int queued)
 {
+	if (!smp_processor_id()) {
+		check_balance(rq, true);
+	}
 }
 
 static void set_curr_task_idle(struct rq *rq)
