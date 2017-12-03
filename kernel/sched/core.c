@@ -3878,6 +3878,7 @@ void set_user_nice(struct task_struct *p, long nice)
 	int old_prio, delta;
 	struct rq_flags rf;
 	struct rq *rq;
+	const struct sched_class *prev_class;
 
 	if (task_nice(p) == nice || nice < MIN_NICE || nice > MAX_NICE)
 		return;
@@ -3911,7 +3912,7 @@ void set_user_nice(struct task_struct *p, long nice)
 	p->prio = effective_prio(p);
 	delta = p->prio - old_prio;
 
-	const struct sched_class *prev_class = p->sched_class;
+	prev_class = p->sched_class;
 	if (ktz_prio(p->prio))
 		p->sched_class = &ktz_sched_class;
 	else

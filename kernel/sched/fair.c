@@ -6599,13 +6599,14 @@ preempt:
 static struct task_struct *
 pick_next_task_fair(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
 {
-	BUG();
 	struct cfs_rq *cfs_rq = &rq->cfs;
 	struct sched_entity *se;
 	struct task_struct *p;
-	int new_tasks;
+	//int new_tasks;
 
-again:
+	BUG();
+
+//again:
 	if (!cfs_rq->nr_running)
 		return NULL;
 
@@ -6716,21 +6717,24 @@ done: __maybe_unused;
 
 	return p;
 
-idle:
-	new_tasks = idle_balance(rq, rf);
-
-	/*
+/*idle:
+	 * This is OK, because current is on_cpu, which avoids it being picked
+	 * for load-balance and preemption/IRQs are still disabled avoiding
+	 * further scheduler activity on it and we're being very careful to
+	 * re-start the picking loop.
+	lockdep_unpin_lock(&rq->lock, cookie);
+	new_tasks = idle_balance(rq);
+	lockdep_repin_lock(&rq->lock, cookie);
 	 * Because idle_balance() releases (and re-acquires) rq->lock, it is
 	 * possible for any higher priority task to appear. In that case we
 	 * must re-start the pick_next_entity() loop.
-	 */
 	if (new_tasks < 0)
 		return RETRY_TASK;
 
 	if (new_tasks > 0)
 		goto again;
 
-	return NULL;
+	return NULL; */
 }
 
 /*
@@ -8541,7 +8545,6 @@ static int load_balance(int this_cpu, struct rq *this_rq,
 			struct sched_domain *sd, enum cpu_idle_type idle,
 			int *continue_balancing)
 {
-	BUG();
 	int ld_moved, cur_ld_moved, active_balance = 0;
 	struct sched_domain *sd_parent = sd->parent;
 	struct sched_group *group;
@@ -8560,6 +8563,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
 		.fbq_type	= all,
 		.tasks		= LIST_HEAD_INIT(env.tasks),
 	};
+
+	BUG();
 
 	cpumask_and(cpus, sched_domain_span(sd), cpu_active_mask);
 
