@@ -86,7 +86,7 @@ struct task_struct init_task
 		.time_slice	= RR_TIMESLICE,
 	},
 	.ktz_se   = { \
-		.run_list       = LIST_HEAD_INIT(tsk.ktz_se.run_list),\
+		.run_list       = LIST_HEAD_INIT(init_task.ktz_se.run_list),\
 	}, \
 	.tasks		= LIST_HEAD_INIT(init_task.tasks),
 #ifdef CONFIG_SMP

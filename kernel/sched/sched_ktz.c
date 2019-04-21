@@ -780,7 +780,7 @@ static bool can_migrate(struct task_struct *p, int to_cpu)
 		return false;
 
 	/* Can't migrate if dest is not allowed. */
-	if (!cpumask_test_cpu(to_cpu, tsk_cpus_allowed(p)))
+	if (!cpumask_test_cpu(to_cpu, &p->cpus_allowed))
 		return false;
 
 	if (TDQ(task_rq(p))->load <= 1)
@@ -1289,7 +1289,7 @@ static void check_preempt_curr_ktz(struct rq *rq, struct task_struct *p, int fla
 		return (1);*/
 }
 
-static struct task_struct *pick_next_task_ktz(struct rq *rq, struct task_struct* prev, struct pin_cookie cookie)
+static struct task_struct *pick_next_task_ktz(struct rq *rq, struct task_struct* prev, struct rq_flags *rf)
 {
 	struct ktz_tdq *tdq = TDQ(rq);
 	struct task_struct *next_task;
@@ -1316,11 +1316,11 @@ redo:
 			return NULL;*/
 
 		/* Steal something. */
-		lockdep_unpin_lock(&rq->lock, cookie);
+		lockdep_unpin_lock(&rq->lock, rf->cookie);
 		raw_spin_unlock(&rq->lock);
 		steal = tdq_idled(tdq);
 		raw_spin_lock(&rq->lock);
-		lockdep_repin_lock(&rq->lock, cookie);
+		lockdep_repin_lock(&rq->lock, rf->cookie);
 
 		/* Either we managed to steal a task, or $BALANCING_CPU gave us
 		 * one while we were trying. In both case we retry. */
@@ -1534,7 +1534,7 @@ static int select_task_rq_ktz(struct task_struct *p, int cpu, int sd_flag, int w
 	return cpu;
 }
 
-static void migrate_task_rq_ktz(struct task_struct *p)
+static void migrate_task_rq_ktz(struct task_struct *p, int new_cpu)
 {
 }
 #endif

@@ -26,7 +26,6 @@
 #include <linux/latencytop.h>
 #include <linux/sched/prio.h>
 #include <linux/signal_types.h>
-#include <linux/psi_types.h>
 #include <linux/mm_types_task.h>
 #include <linux/task_io_accounting.h>
 #include <linux/rseq.h>
@@ -586,6 +585,7 @@ struct sched_ktz_entity {
 	int             lend_user_pri;
 	int             user_pri;
 	int             state;
+	int		preempted; /* Is this task being preempted ? */
 };
 
 union rcu_special {
@@ -627,7 +627,7 @@ struct task_struct {
 	randomized_struct_fields_start
 
 	void				*stack;
-	refcount_t			usage;
+	atomic_t			usage;
 	/* Per task flags (PF_*), defined further below: */
 	unsigned int			flags;
 	unsigned int			ptrace;
@@ -748,6 +748,9 @@ struct task_struct {
 #endif
 #ifdef CONFIG_MEMCG
 	unsigned			in_user_fault:1;
+#ifdef CONFIG_MEMCG_KMEM
+        unsigned                        memcg_kmem_skip_account:1;
+#endif
 #endif
 #ifdef CONFIG_COMPAT_BRK
 	unsigned			brk_randomized:1;
@@ -987,7 +990,7 @@ struct task_struct {
 #endif
 	/* Ptrace state: */
 	unsigned long			ptrace_message;
-	kernel_siginfo_t		*last_siginfo;
+	siginfo_t			*last_siginfo;
 
 	struct task_io_accounting	ioac;
 #ifdef CONFIG_PSI
@@ -1016,7 +1019,7 @@ struct task_struct {
 	/* cg_list protected by css_set_lock and tsk->alloc_lock: */
 	struct list_head		cg_list;
 #endif
-#ifdef CONFIG_X86_CPU_RESCTRL
+#ifdef CONFIG_INTEL_RDT
 	u32				closid;
 	u32				rmid;
 #endif
@@ -1214,7 +1217,7 @@ struct task_struct {
 #endif
 #ifdef CONFIG_THREAD_INFO_IN_TASK
 	/* A live task holds one reference: */
-	refcount_t			stack_refcount;
+	atomic_t			stack_refcount;
 #endif
 #ifdef CONFIG_LIVEPATCH
 	int patch_state;

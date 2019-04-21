@@ -366,8 +366,8 @@ TRACE_EVENT(sched_process_fork,
 		__entry->parent_pid	= parent->pid;
 		memcpy(__entry->child_comm, child->comm, TASK_COMM_LEN);
 		__entry->child_pid	= child->pid;
-		__entry->cpus = tsk_cpus_allowed(child)->bits;
-		snprintf(__entry->cpus_str, 32, "%*pbl", cpumask_pr_args(tsk_cpus_allowed(child)));
+		__entry->cpus = child->cpus_allowed.bits;
+		snprintf(__entry->cpus_str, 32, "%*pbl", cpumask_pr_args(&child->cpus_allowed));
 	),
 
 	TP_printk("comm=%s pid=%d child_comm=%s child_pid=%d child_cpus=%s",

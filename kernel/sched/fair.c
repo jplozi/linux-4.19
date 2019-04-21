@@ -6647,7 +6647,7 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev, struct rq_flags *rf
 				cfs_rq = &rq->cfs;
 
 				if (!cfs_rq->nr_running)
-					goto idle;
+					return NULL;
 
 				goto simple;
 			}
