@@ -425,7 +425,8 @@ static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
  * and everything must be accessed through the @rq and @curr passed in
  * parameters.
  */
-static void task_tick_idle(struct rq *rq, struct task_struct *curr, int queued)
+static void task_tick_idle(struct rq *rq, struct task_struct *curr, int queued,
+		           struct rq_flags *rf)
 {
 	/*if (!smp_processor_id()) {
 		check_balance(rq, true);

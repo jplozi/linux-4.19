@@ -4528,6 +4528,7 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
 		cfs_rq = cfs_rq_of(se);
 		if (enqueue)
 			enqueue_entity(cfs_rq, se, ENQUEUE_WAKEUP);
+// printk("1 cfs_rq->h_nr_running=%d + %ld\n", cfs_rq->h_nr_running, task_delta);
 		cfs_rq->h_nr_running += task_delta;
 
 		if (cfs_rq_throttled(cfs_rq))
@@ -5112,6 +5113,8 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		 */
 		if (cfs_rq_throttled(cfs_rq))
 			break;
+// printk("2 cfs_rq->h_nr_running = %d before ++\n", cfs_rq->h_nr_running);
+dump_stack();
 		cfs_rq->h_nr_running++;
 
 		flags = ENQUEUE_WAKEUP;
@@ -5119,6 +5122,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 
 	for_each_sched_entity(se) {
 		cfs_rq = cfs_rq_of(se);
+// printk("3 cfs_rq->h_nr_running = %d before ++\n", cfs_rq->h_nr_running);
 		cfs_rq->h_nr_running++;
 
 		if (cfs_rq_throttled(cfs_rq))
@@ -9657,7 +9661,8 @@ static void rq_offline_fair(struct rq *rq)
  * and everything must be accessed through the @rq and @curr passed in
  * parameters.
  */
-static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
+static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued,
+		           struct rq_flags *rf)
 {
 	struct cfs_rq *cfs_rq;
 	struct sched_entity *se = &curr->se;

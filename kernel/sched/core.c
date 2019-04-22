@@ -230,7 +230,7 @@ static enum hrtimer_restart hrtick(struct hrtimer *timer)
 
 	rq_lock(rq, &rf);
 	update_rq_clock(rq);
-	rq->curr->sched_class->task_tick(rq, rq->curr, 1);
+	rq->curr->sched_class->task_tick(rq, rq->curr, 1, &rf);
 	rq_unlock(rq, &rf);
 
 	return HRTIMER_NORESTART;
@@ -3051,7 +3051,7 @@ void scheduler_tick(void)
 	rq_lock(rq, &rf);
 
 	update_rq_clock(rq);
-	curr->sched_class->task_tick(rq, curr, 0);
+	curr->sched_class->task_tick(rq, curr, 0, &rf);
 	cpu_load_update_active(rq);
 	calc_global_load_tick(rq);
 
@@ -3107,7 +3107,7 @@ static void sched_tick_remote(struct work_struct *work)
 	 * amount of time.
 	 */
 	WARN_ON_ONCE(delta > (u64)NSEC_PER_SEC * 3);
-	curr->sched_class->task_tick(rq, curr, 0);
+	curr->sched_class->task_tick(rq, curr, 0, &rf);
 
 out_unlock:
 	rq_unlock_irq(rq, &rf);
@@ -3309,14 +3309,14 @@ pick_next_task(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
 {
 	const struct sched_class *class;
 	struct task_struct *p;
-
+//printk("%d %d rq->nr_running=%d, rq->cfs.h_nr_running=%d", prev->sched_class == &idle_sched_class, prev->sched_class == &fair_sched_class, rq->nr_running, rq->cfs.h_nr_running); 
 	/*
 	 * Optimization: we know that if all tasks are in the fair class we can
 	 * call that function directly, but only if the @prev task wasn't of a
 	 * higher scheduling class, because otherwise those loose the
 	 * opportunity to pull in more work from other CPUs.
 	 */
-	if (likely((prev->sched_class == &idle_sched_class ||
+	if (likely((/*prev->sched_class == &idle_sched_class ||*/
 		    prev->sched_class == &fair_sched_class) &&
 		   rq->nr_running == rq->cfs.h_nr_running)) {
 

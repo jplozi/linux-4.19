@@ -865,7 +865,7 @@ static struct task_struct *tdq_steal(struct ktz_tdq *tdq, int cpu)
 static int sched_balance_pair(struct ktz_tdq *high, struct ktz_tdq *low)
 {
 	int dest_cpu;
-	unsigned long flags;
+	struct rq_flags rf;
 	struct task_struct *stolen;
 	struct rq *high_rq = RQ(high);
 	struct rq *low_rq = RQ(low);
@@ -873,23 +873,20 @@ static int sched_balance_pair(struct ktz_tdq *high, struct ktz_tdq *low)
 	/* We will move a task from high to low. */
 	dest_cpu = RQ(low)->cpu;
 
-	raw_spin_lock_irqsave(&high_rq->lock, flags);
-
+	rq_lock_irqsave(high_rq, &rf);
 	/* Try to steal a task. */
 	stolen = tdq_steal(high, dest_cpu);
 	if (stolen) {
 		detach_task(high_rq, stolen, dest_cpu);
 	}
 
-	raw_spin_unlock(&high_rq->lock);
-	local_irq_restore(flags);
+	rq_unlock_irqrestore(high_rq, &rf);
 
 	/* Attach the stolen task at the destination if needed. */
 	if (stolen) {
-		raw_spin_lock_irqsave(&low_rq->lock, flags);
+		rq_lock_irqsave(low_rq, &rf);
 		attach_task(low_rq, stolen);
-		raw_spin_unlock(&low_rq->lock);
-		local_irq_restore(flags);
+		rq_unlock_irqrestore(low_rq, &rf);
 		resched_curr(low_rq);
 		return 1;
 	}
@@ -1018,7 +1015,7 @@ static void trace_plb(void)
 	trace_sched_plb(jiffies);
 }
 
-static int sched_balance(struct rq *rq)
+static int sched_balance(struct rq *rq, struct rq_flags *rf)
 {
 	int moved;
 	struct sched_domain *top;
@@ -1034,9 +1031,9 @@ static int sched_balance(struct rq *rq)
 
 	trace_plb();
 
-	raw_spin_unlock(&rq->lock);
+	rq_unlock(rq, rf);
 	moved = sched_balance_group(top);
-	raw_spin_lock(&rq->lock);
+	rq_lock(rq, rf);
 	return moved;
 }
 
@@ -1046,7 +1043,7 @@ static int sched_balance(struct rq *rq)
 static int tdq_idled(struct ktz_tdq *this_tdq)
 {
 	int this_cpu, victim_cpu;
-	unsigned long flags;
+	struct rq_flags rf;
 	struct ktz_tdq *victim_tdq;
 	struct cpumask cpus;
 	struct sched_domain *sd;
@@ -1079,11 +1076,10 @@ static int tdq_idled(struct ktz_tdq *this_tdq)
 		victim_rq = cpu_rq(victim_cpu);
 		victim_tdq = TDQ(victim_rq);
 
-		raw_spin_lock_irqsave(&victim_rq->lock, flags);
+		rq_lock_irqsave(victim_rq, &rf);
 		/* Make sure the load of the victim still permits us to steal. */
 		if (victim_tdq->load <= 1) {
-			raw_spin_unlock(&victim_rq->lock);
-			local_irq_restore(flags);
+			rq_unlock_irqrestore(victim_rq, &rf);
 			continue;
 		}
 		//moved = tdq_move(victim_tdq, this_tdq);
@@ -1091,14 +1087,12 @@ static int tdq_idled(struct ktz_tdq *this_tdq)
 		if (stolen) {
 			detach_task(victim_rq, stolen, this_cpu);
 		}
-		raw_spin_unlock(&victim_rq->lock);
-		local_irq_restore(flags);
+		rq_unlock_irqrestore(victim_rq, &rf);
 
 		if (stolen) {
-			raw_spin_lock_irqsave(&this_rq->lock, flags);
+			rq_lock_irqsave(this_rq, &rf);
 			attach_task(this_rq, stolen);
-			raw_spin_unlock(&this_rq->lock);
-			local_irq_restore(flags);
+			rq_unlock_irqrestore(this_rq, &rf);
 			return 1;
 		}
 	}
@@ -1316,11 +1310,9 @@ redo:
 			return NULL;*/
 
 		/* Steal something. */
-		lockdep_unpin_lock(&rq->lock, rf->cookie);
-		raw_spin_unlock(&rq->lock);
+		rq_unlock(rq, rf);
 		steal = tdq_idled(tdq);
-		raw_spin_lock(&rq->lock);
-		lockdep_repin_lock(&rq->lock, rf->cookie);
+		rq_lock(rq, rf);
 
 		/* Either we managed to steal a task, or $BALANCING_CPU gave us
 		 * one while we were trying. In both case we retry. */
@@ -1354,25 +1346,24 @@ static void set_curr_task_ktz(struct rq *rq)
 }
 
 #ifdef CONFIG_SMP
-static void check_balance(struct rq *rq)
+static void check_balance(struct rq *rq, struct rq_flags *rf)
 {
 	if (periodic_balance && balance_ticks && --balance_ticks == 0) {
-		sched_balance(rq);
+		sched_balance(rq, rf);
 	}
 }
 #endif
 
-static void task_tick_ktz(struct rq *rq, struct task_struct *curr, int queued)
+static void task_tick_ktz(struct rq *rq, struct task_struct *curr, int queued, struct rq_flags *rf)
 {
 	struct ktz_tdq *tdq = TDQ(rq);
 	struct sched_ktz_entity *ktz_se = KTZ_SE(curr);
 
 	tdq->oldswitchcnt = tdq->switchcnt;
 	tdq->switchcnt = tdq->load;
-
 #ifdef CONFIG_SMP
 	if (smp_processor_id() == BALANCING_CPU) {
-		check_balance(rq);
+		check_balance(rq, rf);
 	}
 	trace_load(tdq);
 #endif

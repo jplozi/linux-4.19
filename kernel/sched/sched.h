@@ -1567,7 +1567,8 @@ struct sched_class {
 #endif
 
 	void (*set_curr_task)(struct rq *rq);
-	void (*task_tick)(struct rq *rq, struct task_struct *p, int queued);
+	void (*task_tick)(struct rq *rq, struct task_struct *p, int queued,
+			  struct rq_flags *rf);
 	void (*task_fork)(struct task_struct *p);
 	void (*task_dead)(struct task_struct *p);
 

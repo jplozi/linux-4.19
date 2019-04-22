@@ -1256,6 +1256,7 @@ struct task_struct {
 
 static inline int ktz_prio(int prio)
 {
+//	printk("prio=%d\n", prio);
 	if (prio >= MIN_KTZ_PRIO && prio <= MAX_KTZ_PRIO)
 		return 1;
 	return sysctl_ktz_enabled && MIN_KTZ_PRIO <= prio && prio <= MAX_KTZ_PRIO;
