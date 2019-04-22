@@ -1249,7 +1249,7 @@ struct task_struct {
 	 */
 };
 
-#define MIN_KTZ_PRIO 125
+#define MIN_KTZ_PRIO 100
 #define MAX_KTZ_PRIO 139
 #define KTZ_PRIO_RANGE (MAX_KTZ_PRIO - MIN_KTZ_PRIO + 1)
 #define KTZ_PREEMPTED 0x1
