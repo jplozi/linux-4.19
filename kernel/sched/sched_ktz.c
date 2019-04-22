@@ -874,6 +874,7 @@ static int sched_balance_pair(struct ktz_tdq *high, struct ktz_tdq *low)
 	dest_cpu = RQ(low)->cpu;
 
 	rq_lock_irqsave(high_rq, &rf);
+	update_rq_clock(high_rq);
 	/* Try to steal a task. */
 	stolen = tdq_steal(high, dest_cpu);
 	if (stolen) {
@@ -885,6 +886,7 @@ static int sched_balance_pair(struct ktz_tdq *high, struct ktz_tdq *low)
 	/* Attach the stolen task at the destination if needed. */
 	if (stolen) {
 		rq_lock_irqsave(low_rq, &rf);
+		update_rq_clock(low_rq);
 		attach_task(low_rq, stolen);
 		rq_unlock_irqrestore(low_rq, &rf);
 		resched_curr(low_rq);
@@ -1034,6 +1036,7 @@ static int sched_balance(struct rq *rq, struct rq_flags *rf)
 	rq_unlock(rq, rf);
 	moved = sched_balance_group(top);
 	rq_lock(rq, rf);
+	update_rq_clock(rq);
 	return moved;
 }
 
@@ -1077,6 +1080,7 @@ static int tdq_idled(struct ktz_tdq *this_tdq)
 		victim_tdq = TDQ(victim_rq);
 
 		rq_lock_irqsave(victim_rq, &rf);
+		update_rq_clock(victim_rq);
 		/* Make sure the load of the victim still permits us to steal. */
 		if (victim_tdq->load <= 1) {
 			rq_unlock_irqrestore(victim_rq, &rf);
@@ -1091,6 +1095,7 @@ static int tdq_idled(struct ktz_tdq *this_tdq)
 
 		if (stolen) {
 			rq_lock_irqsave(this_rq, &rf);
+			update_rq_clock(this_rq);
 			attach_task(this_rq, stolen);
 			rq_unlock_irqrestore(this_rq, &rf);
 			return 1;
@@ -1313,6 +1318,7 @@ redo:
 		rq_unlock(rq, rf);
 		steal = tdq_idled(tdq);
 		rq_lock(rq, rf);
+		update_rq_clock(rq);
 
 		/* Either we managed to steal a task, or $BALANCING_CPU gave us
 		 * one while we were trying. In both case we retry. */
