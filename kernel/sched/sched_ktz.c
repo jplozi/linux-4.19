@@ -888,8 +888,8 @@ static int sched_balance_pair(struct ktz_tdq *high, struct ktz_tdq *low)
 		rq_lock_irqsave(low_rq, &rf);
 		update_rq_clock(low_rq);
 		attach_task(low_rq, stolen);
-		rq_unlock_irqrestore(low_rq, &rf);
 		resched_curr(low_rq);
+		rq_unlock_irqrestore(low_rq, &rf);
 		return 1;
 	}
 	else {
@@ -1057,7 +1057,7 @@ static int tdq_idled(struct ktz_tdq *this_tdq)
 	this_cpu = smp_processor_id();
 
 	if(!cpu_active(this_cpu))
-		return;
+		return 0;
 
 	cpumask_setall(&cpus);
 	/* Don't steal from oursleves. */
